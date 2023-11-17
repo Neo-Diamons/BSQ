@@ -29,8 +29,10 @@ SKIP=0
 for f in "$MAP_FOLDER"/*
 do
     echo -e "\e[34mTesting\e[0m $f"
+    START=$(date +%s.%N)
     $BINARY "$f" > tmp
     RETURN=$?
+    END=$(date +%s.%N)
     if [[ ! -f $SOLVED_MAP_FOLDER/$(basename "$f") && $RETURN != 1 ]] \
       || [[ -f $SOLVED_MAP_FOLDER/$(basename "$f") && $(diff tmp "$SOLVED_MAP_FOLDER/$(basename "$f")") != "" ]]
     then
@@ -38,7 +40,8 @@ do
         echo -e "\e[31mTest failed [$RETURN]\e[0m"
     else
         SUCCESS=$((SUCCESS+1))
-        echo -e "\e[32mTest passed\e[0m"
+        echo -e "\e[34mExecution time\e[0m $(echo "$END - $START" | bc) \e[34msec\e[0m\n" \
+                "\e[32mTest passed\e[0m"
     fi
 done
 
