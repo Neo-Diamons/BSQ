@@ -1,3 +1,7 @@
 # Folder
 .idea
+.obj
 assets
+
+# Binary files
+bsq

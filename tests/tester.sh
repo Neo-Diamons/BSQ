@@ -28,19 +28,14 @@ SKIP=0
 
 for f in "$MAP_FOLDER"/*
 do
-    if [[ ! -f $SOLVED_MAP_FOLDER/$(basename "$f") ]]
-    then
-        SKIP=$((SKIP+1))
-        echo -e "\e[33mSolved map $SOLVED_MAP_FOLDER/$(basename "$f") does not exist\e[0m"
-        continue
-    fi
-
     echo -e "\e[34mTesting\e[0m $f"
     $BINARY "$f" > tmp
-    if [[ $(diff tmp "$SOLVED_MAP_FOLDER/$(basename "$f")") != "" ]]
+    RETURN=$?
+    if [[ ! -f $SOLVED_MAP_FOLDER/$(basename "$f") && $RETURN != 1 ]] \
+      || [[ -f $SOLVED_MAP_FOLDER/$(basename "$f") && $(diff tmp "$SOLVED_MAP_FOLDER/$(basename "$f")") != "" ]]
     then
         FAILURE=$((FAILURE+1))
-        echo -e "\e[31mTest failed\e[0m"
+        echo -e "\e[31mTest failed [$RETURN]\e[0m"
     else
         SUCCESS=$((SUCCESS+1))
         echo -e "\e[32mTest passed\e[0m"
