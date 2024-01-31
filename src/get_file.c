@@ -1,9 +1,18 @@
+/*
+** EPITECH PROJECT, 2024
+** BSQ
+** File description:
+** get_file
+*/
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <stdio.h>
 
-char *get_file(const char *filepath, struct stat *st) {
+char *get_file(const char *filepath, struct stat *st)
+{
     char *buffer;
     int fd;
 

@@ -1,143 +1,181 @@
+/*
+** EPITECH PROJECT, 2024
+** BSQ
+** File description:
+** bsq
+*/
+
 #include <malloc.h>
 #include <unistd.h>
 
 #include "bsq.h"
 
-static unsigned int first_line(const char *file, unsigned int *square_map,
-    square_t *square, unsigned int *offset)
+INLINE static void update_square(
+    square_t *square,
+    uint x,
+    uint y,
+    uint size)
 {
-    unsigned int index;
+    square->x = x;
+    square->y = y;
+    square->size = size;
+}
 
-    for (index = *offset;; index++) {
-        switch (file[index]) {
+INLINE static uint first_line(
+    const char *file,
+    uint *map,
+    square_t *square,
+    uint *off)
+{
+    for (uint idx = *off;; idx++) {
+        switch (file[idx]) {
             case '.':
-                square_map[index - *offset] = 1;
-                if (square_map[index - *offset] > square->size) {
-                    square->x = index;
+                map[idx - *off] = 1;
+                if (map[idx - *off] > square->size) {
+                    square->x = idx;
                     square->y = 0;
-                    square->size = square_map[index - *offset];
+                    square->size = map[idx - *off];
                 }
                 break;
             case 'o':
-                square_map[index - *offset] = 0;
+                map[idx - *off] = 0;
                 break;
             case '\n':
-                square->line_length = index - *offset + 1;
-                return index - (*offset)++;
+                square->line_length = idx - *off + 1;
+                return idx - (*off)++;
             default:
                 return 0;
         }
     }
 }
 
-static bool search(char *file, unsigned int *square_map, square_t *square,
-    long long nb_lines)
+INLINE static bool main_loop(
+    const char *file,
+    uint *map,
+    square_t *square,
+    uint off,
+    uint line_length,
+    int64_t nb_lines
+)
 {
-    unsigned int offset = square->offset_start;
-    unsigned int line_length = first_line(file, square_map, square, &offset);
-    unsigned int count_lines = 1;
-    unsigned int index;
+    uint count_lines = 1;
+    for (uint idx = off + line_length + 1;; idx++) {
+        switch (file[idx]) {
+            case '.':
+                map[idx - off] = file[idx - 1] == '\n' ? 1
+                    : MIN3(
+                        map[idx - off - 1],
+                        map[idx - off - line_length],
+                        map[idx - off - line_length - 1]
+                    ) + 1;
+                if (map[idx - off] > square->size)
+                    update_square(square, idx, count_lines, map[idx - off]);
+                break;
+            case 'o':
+                map[idx - off] = 0;
+                break;
+            case '\n':
+                if (line_length * (++count_lines) != idx - off++)
+                    return false;
+                break;
+            default:
+                return !file[idx] && file[idx - 1] == '\n'
+                    && nb_lines == count_lines;
+        }
+    }
+}
+
+INLINE static bool search(
+    char *file,
+    uint *map,
+    square_t *square,
+    int64_t nb_lines)
+{
+    uint off = square->off_start;
+    uint line_length = first_line(file, map, square, &off);
 
     if (!line_length)
         return false;
-    switch (file[offset + line_length]) {
+    switch (file[off + line_length]) {
         case '.':
-            square_map[line_length] = 1;
-            if (square_map[line_length] > square->size) {
-                square->x = offset + line_length;
-                square->y = count_lines;
-                square->size = square_map[line_length];
-            }
+            map[line_length] = 1;
+            if (map[line_length] > square->size)
+                update_square(square, off + line_length, 1, map[line_length]);
             break;
         case 'o':
-            square_map[line_length] = 0;
+            map[line_length] = 0;
             break;
         default:
             return nb_lines == 1;
     }
-    for (index = offset + line_length + 1;; index++) {
-        switch (file[index]) {
-            case '.':
-                square_map[index - offset] = file[index - 1] == '\n' ? 1
-                    : MIN3(
-                        square_map[index - offset - 1],
-                        square_map[index - offset - line_length],
-                        square_map[index - offset - line_length - 1]
-                    ) + 1;
-                if (square_map[index - offset] > square->size) {
-                    square->x = index;
-                    square->y = count_lines;
-                    square->size = square_map[index - offset];
-                }
-                break;
-            case 'o':
-                square_map[index - offset] = 0;
-                break;
-            case '\n':
-                if (line_length * (++count_lines) != index - offset++)
-                    return false;
-                break;
-            default:
-                return !file[index] && file[index - 1] == '\n' && nb_lines == count_lines;
-        }
-    }
+    return main_loop(file, map, square, off, line_length, nb_lines);
 }
 
-static unsigned int get_nb_lines(const char *file, long long *nb_lines)
+INLINE static uint get_nb_lines(
+    const char *file,
+    int64_t *nb_lines)
 {
-    unsigned int first_line_length = 0;
+    uint first_line_length = 0;
 
     if (!file)
         return 0;
-    *nb_lines = ice_atoi(file);
+    *nb_lines = my_atoi(file);
     if (*nb_lines <= 0)
         return 0;
-    for (unsigned long long tmp = *nb_lines; tmp >= 10; first_line_length++)
+    for (uint tmp = *nb_lines; tmp >= 10; first_line_length++)
         tmp /= 10;
     first_line_length++;
-    return (*nb_lines == 0 || file[first_line_length] != '\n') ? 0
+    return *nb_lines == 0 || file[first_line_length] != '\n' ? 0
         : ++first_line_length;
 }
 
-static bool print_square(char *file, struct stat st, square_t *square,
-    unsigned int first_line_length)
+INLINE static bool print_square(
+    char *file,
+    struct stat st,
+    square_t *square,
+    uint first_line_length)
 {
     if (square->line_length == 2) {
-        for (unsigned int i = 0; i < square->size; ++i)
+        for (uint i = 0; i < square->size; ++i)
             file[square->x + i] = 'x';
     } else {
-        unsigned int p = (square->y - square->size) * square->line_length
+        uint p = (square->y - square->size) * square->line_length
             + (square->x - square->size + 1) % square->line_length;
-
-        for (unsigned int y = 0; y < square->size; ++y) {
+        for (uint y = 0; y < square->size; ++y) {
             p += square->line_length;
-            for (unsigned int x = 0; x < square->size; ++x) {
+            for (uint x = 0; x < square->size; ++x)
                 file[p + x] = 'x';
-            }
         }
     }
-//    return write(1, file, st.st_size) == -1;
-    return write(1, file + first_line_length,
-        st.st_size - first_line_length) == -1;
+
+    return write(STDOUT_FILENO, file + first_line_length,
+        st.st_size - first_line_length) == EOF;
+}
+
+INLINE static bool find_square(struct stat st, char *file)
+{
+    bool ret = true;
+    int64_t nb_lines;
+    uint first_line_length = get_nb_lines(file, &nb_lines);
+    square_t square = {first_line_length, 0, 0, 0, 0};
+    uint *map = malloc(sizeof(uint) * st.st_size);
+
+    if (!map) {
+        free(file);
+        return false;
+    }
+    if (!search(file, map, &square, nb_lines)
+        || print_square(file, st, &square, first_line_length))
+        ret = false;
+    free(file);
+    free(map);
+    return ret;
 }
 
 bool bsq(const char *filepath)
 {
     struct stat st = {0};
     char *file = get_file(filepath, &st);
-    long long nb_lines;
-    unsigned int first_line_length = get_nb_lines(file, &nb_lines);
-    unsigned int *square_map = (file) ? malloc(sizeof(unsigned int) * st.st_size) : NULL;
-    square_t *square = malloc(sizeof(square_t));
 
-    if (!square_map || !square)
-        return false;
-    *square = (square_t){first_line_length, 0, 0, 0, 0};
-    if (!search(file, square_map, square, nb_lines)
-        || print_square(file, st, square, first_line_length))
-        return false;
-    free(file);
-    free(square_map);
-    free(square);
-    return true;
+    return file ? find_square(st, file) : false;
 }
