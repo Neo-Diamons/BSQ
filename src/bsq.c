@@ -55,8 +55,7 @@ INLINE static bool main_loop(
     square_t *square,
     uint off,
     uint line_length,
-    int64_t nb_lines
-)
+    int64_t nb_lines)
 {
     uint count_lines = 1;
     for (uint idx = off + line_length + 1;; idx++) {

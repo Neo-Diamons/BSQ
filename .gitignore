@@ -1,7 +1,9 @@
 # Folder
 .idea
-.obj
-assets
+build
+
+# Extensions
+*.o
 
 # Binary files
 bsq

@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <stdio.h>
 
 char *get_file(const char *filepath, struct stat *st)
 {
